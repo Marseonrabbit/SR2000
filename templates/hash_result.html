@@ -6,8 +6,6 @@
 <p><strong>Malicious Detections:</strong> {{ result.malicious_count }} out of {{ result.total_engines }} engines</p>
 <p><strong>File Type:</strong> {{ result.file_type }}</p>
 <p><strong>Malicious Score (VirusTotal):</strong> {{ result.malicious_score }}</p>
-
-<!-- Top 5 Community Comments -->
 {% if result.comments %}
     <h3>Top 5 Community Comments</h3>
     <div class="comments-section">

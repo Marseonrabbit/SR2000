@@ -1,38 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Single IP Analysis Result</h2>
-
 <p><strong>IP Address:</strong> {{ result.ip }}</p>
 <p><strong>ISP:</strong> {{ result.isp }}</p>
 <p><strong>Country:</strong> {{ result.country }}</p>
 <p><strong>Reputation:</strong> {{ result.reputation }}</p>
 <p><strong>Malicious Score (VirusTotal):</strong> {{ result.malicious_score }}</p>
-
-<!-- Multiple grids for different websites -->
-<div class="row">
-  {% for source in result.data_sources %}
-  <div class="col-md-6 col-lg-3" style="border:1px solid red; margin:5px; padding:5px; font-family:Calibri;">
-      <h5>{{ source.title }}</h5>
-      <p>{{ source.details }}</p>
-  </div>
-  {% endfor %}
-</div>
-
-<!-- Last grid for VirusTotal Top 5 Community Comments -->
-<div class="row">
-  <div class="col-md-12" style="border:1px solid red; margin:5px; padding:5px; font-family:Calibri;">
-      <h5>VirusTotal Top 5 Community Comments</h5>
-      {% if result.comments %}
-        {% for comment in result.comments %}
-          <div class="comment">
-              <p><strong>{{ comment.user }}</strong> <em>({{ comment.date }})</em></p>
-              <p>{{ comment.comment }}</p>
-              <hr>
-          </div>
-        {% endfor %}
-      {% else %}
-        <p>No Community Comments Available.</p>
-      {% endif %}
-  </div>
-</div>
+<h5>VirusTotal Top 5 Community Comments</h5>
+{% if result.comments %}
+    {% for comment in result.comments %}
+        <div class="comment">
+            <p><strong>{{ comment.user }}</strong> <em>({{ comment.date }})</em></p>
+            <p>{{ comment.comment }}</p>
+            <hr>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No Community Comments Available.</p>
+{% endif %}
 {% endblock %}

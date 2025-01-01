@@ -1,24 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Bulk Lookup Progress</h2>
-
+<h2>Bulk IP Lookup Progress</h2>
 <p id="message">Processing...</p>
-
 <div id="progress-bar">
     <div id="progress-fill">
         <span id="progress-text">0%</span>
     </div>
 </div>
-
-<!-- Cancel Button -->
 <form method="post" action="{{ url_for('cancel_job', job_id=job_id) }}">
     <button type="submit" class="btn btn-warning">Cancel Analysis</button>
 </form>
-
-<!-- Modal for completion notification -->
 <div class="modal fade" id="completionModal" tabindex="-1" role="dialog" aria-labelledby="completionModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
-    <div class="modal-content" style="background-color: black; color: white;">
+    <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="completionModalLabel">Analysis Complete</h5>
       </div>
@@ -31,10 +25,8 @@
     </div>
   </div>
 </div>
-
 <script>
     var jobId = "{{ job_id }}";
-
     function getProgress() {
         fetch("/progress/" + jobId)
             .then(response => response.json())
@@ -43,9 +35,7 @@
                 let progressFill = document.getElementById('progress-fill');
                 progressFill.style.width = data.progress + '%';
                 document.getElementById('progress-text').innerText = data.progress + '%';
-
                 if (data.status === 'Completed') {
-                    // Show the completion modal
                     $('#completionModal').modal('show');
                     document.getElementById('downloadLink').href = '/download/' + jobId;
                 } else if (data.status === 'Canceled') {

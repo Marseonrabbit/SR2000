@@ -1,30 +1,34 @@
-/* Set Calibri as the default font for the entire application */
 body {
-    background-color: black;
-    color: white;
+    background-color: white;
+    color: black;
     font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
 }
 
 .container {
     width: 80%;
     margin: auto;
     padding: 20px;
+    flex: 1;
 }
 
 .nav {
     margin-top: 20px;
     padding-top: 10px;
-    border-top: 1px solid red;
+    border-top: 1px solid #212529;
 }
 
 .custom-link {
-    color: red;
+    color: #212529;
     margin-right: 15px;
     text-decoration: none;
 }
 
 .custom-link:hover {
-    color: white;
+    color: #16181b;
     text-decoration: underline;
 }
 
@@ -32,43 +36,73 @@ input[type="text"], input[type="file"], textarea {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
-    background-color: #333333;
-    color: white;
-    border: 1px solid red;
-    font-family: inherit; /* Inherit font from body */
+    background-color: #f9f9f9;
+    color: black;
+    border: 1px solid #212529;
+    font-family: inherit;
+}
+
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    color: black;
+    border: 1px solid #212529;
+    font-family: inherit;
 }
 
 input[type="submit"], .btn {
-    background-color: red;
+    background-color: #212529;
     color: white;
     font-weight: bold;
     padding: 10px 20px;
     border: none;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    font-family: inherit; /* Inherit font from body */
+    font-family: inherit;
 }
 
 input[type="submit"]:hover, .btn:hover {
-    background-color: darkred;
+    background-color: #16181b;
 }
 
 h1, h2 {
-    color: red;
-    font-family: inherit; /* Inherit font from body */
+    color: #212529;
+    font-family: inherit;
 }
 
 .alert {
-    background-color: darkred;
-    color: white;
+    background-color: #ffcccc;
+    color: black;
     border: none;
-    font-family: inherit; /* Inherit font from body */
+    font-family: inherit;
+}
+
+.alert-success {
+    background-color: #dff0d8;
+    color: black;
+}
+
+.alert-danger {
+    background-color: #f2dede;
+    color: black;
+}
+
+.alert-warning {
+    background-color: #fcf8e3;
+    color: black;
+}
+
+.alert-info {
+    background-color: #d9edf7;
+    color: black;
 }
 
 .modal-content {
-    background-color: black;
-    color: white;
-    font-family: inherit; /* Inherit font from body */
+    background-color: white;
+    color: black;
+    font-family: inherit;
 }
 
 .modal-header, .modal-footer {
@@ -79,7 +113,7 @@ h1, h2 {
     position: relative;
     width: 100%;
     height: 30px;
-    background-color: #333333;
+    background-color: #f9f9f9;
     margin-bottom: 20px;
     border-radius: 5px;
     overflow: hidden;
@@ -101,7 +135,7 @@ h1, h2 {
 .comments-section {
     margin-top: 20px;
     padding: 10px;
-    background-color: #444444;
+    background-color: #f9f9f9;
     border-radius: 5px;
 }
 
@@ -116,5 +150,22 @@ h1, h2 {
 .comment hr {
     border: 0;
     height: 1px;
-    background: #555555;
+    background: #ddd;
+}
+
+.logo-container {
+    background-color: #212529;
+    padding: 10px;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.footer {
+    background-color: #212529;
+    color: white;
+    text-align: right;
+    padding: 10px 20px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
 }

@@ -10,30 +10,20 @@ from threading import Thread, Event
 import uuid
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')
 
-# Configuration
-app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')  # Replace with a secure key in production
-
-# Define upload and download folders
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
 DOWNLOAD_FOLDER = os.environ.get('DOWNLOAD_FOLDER', 'downloads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['DOWNLOAD_FOLDER'] = DOWNLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Ensure the upload and download directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
 
-# Global dictionary to store job details (in-memory)
 jobs = {}
 
-###############################
-#       Helper Functions      #
-###############################
-
 def get_country_name(country_code):
-    """Retrieve the full country name from a country code."""
     if not country_code:
         return "Unknown Country"
     try:
@@ -47,7 +37,6 @@ def get_country_name(country_code):
         return "Unknown Country"
 
 def classify_reputation(score):
-    """Classify the IP reputation based on VirusTotal's malicious score."""
     if score == 0:
         return "Safe"
     elif 1 <= score <= 5:
@@ -57,16 +46,11 @@ def classify_reputation(score):
     return "Unknown"
 
 def get_ip_info(api_key, ip):
-    """
-    Fetch IP reputation information from VirusTotal.
-    Returns (ISP, Country, Reputation, malicious_score_str).
-    """
     url = f"https://www.virustotal.com/api/v3/ip_addresses/{ip}"
     headers = {"x-apikey": api_key}
     response = requests.get(url, headers=headers)
 
     if response.status_code == 401:
-        # Invalid API key
         return None, None, None, None
     if response.status_code == 200:
         data = response.json()
@@ -90,10 +74,6 @@ def get_ip_info(api_key, ip):
         return "Error", "Error", "Error", "Error"
 
 def get_comments(api_key, resource_type, resource_id, limit=5):
-    """
-    Fetch top community comments from VirusTotal for a given resource.
-    resource_type: 'ip_addresses' or 'files'
-    """
     url = f"https://www.virustotal.com/api/v3/{resource_type}/{resource_id}/comments"
     headers = {"x-apikey": api_key}
     params = {"limit": limit}
@@ -115,7 +95,6 @@ def get_comments(api_key, resource_type, resource_id, limit=5):
         return []
 
 def classify_hash_reputation(malicious_count, total_engines):
-    """Classify a file hash reputation based on malicious detections."""
     if total_engines == 0:
         return "Unknown"
     malicious_percentage = (malicious_count / total_engines) * 100
@@ -129,10 +108,6 @@ def classify_hash_reputation(malicious_count, total_engines):
         return "High Risk"
 
 def get_hash_reputation(api_key, file_hash):
-    """
-    Fetch file hash reputation from VirusTotal.
-    Returns (reputation, malicious_count, total_engines, file_type, malicious_score).
-    """
     url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
     headers = {"x-apikey": api_key}
     response = requests.get(url, headers=headers)
@@ -152,13 +127,7 @@ def get_hash_reputation(api_key, file_hash):
         else:
             malicious_score_str = f"{malicious_count}/{total_engines}"
 
-        return (
-            reputation,
-            malicious_count,
-            total_engines,
-            file_type,
-            malicious_score_str
-        )
+        return reputation, malicious_count, total_engines, file_type, malicious_score_str
     elif response.status_code == 404:
         return "Not Found", 0, 0, "Unknown", None
     elif response.status_code == 401:
@@ -166,21 +135,12 @@ def get_hash_reputation(api_key, file_hash):
     else:
         return "Error", 0, 0, "Unknown", None
 
-#############################################
-#         Single IP Analysis (No DL)        #
-#############################################
-
 @app.route('/')
 def index():
-    """Home page for single IP lookup."""
     return render_template('index.html')
 
 @app.route('/lookup_ip', methods=['POST'])
 def lookup_ip():
-    """
-    Handle single IP lookup in a background thread with a progress bar,
-    no Excel download. The final result is displayed on screen.
-    """
     ip = request.form['ip']
     api_key = session.get('api_key', '')
 
@@ -188,166 +148,30 @@ def lookup_ip():
         flash('Please ensure API Key is saved and IP address is entered.', 'warning')
         return redirect(url_for('index'))
 
-    job_id = str(uuid.uuid4())
-    jobs[job_id] = {
-        'status': 'Processing',
-        'progress': 0,
-        'message': f"Starting IP analysis for {ip}...",
-        'cancel_event': Event(),
-        'is_single_ip': True,
-        'result': {}
+    isp, country, reputation, malicious_score = get_ip_info(api_key, ip)
+    if isp is None:
+        flash('Invalid API Key.', 'danger')
+        return redirect(url_for('index'))
+
+    comments = get_comments(api_key, 'ip_addresses', ip, limit=5)
+
+    result_data = {
+        'ip': ip,
+        'isp': isp,
+        'country': country,
+        'reputation': reputation,
+        'malicious_score': malicious_score,
+        'comments': comments
     }
 
-    thread = Thread(target=process_single_ip_thread, args=(job_id, ip, api_key))
-    thread.start()
-
-    return redirect(url_for('single_ip_progress', job_id=job_id))
-
-def process_single_ip_thread(job_id, ip, api_key):
-    """
-    Background thread function for single IP.
-    We add multiple websites to the result as placeholders.
-    """
-    try:
-        jobs[job_id]['progress'] = 10
-
-        isp, country, reputation, malicious_score = get_ip_info(api_key, ip)
-        if isp is None:
-            jobs[job_id]['status'] = 'Error'
-            jobs[job_id]['message'] = 'Invalid API Key.'
-            return
-
-        # Get top 5 VT comments
-        comments = get_comments(api_key, 'ip_addresses', ip, limit=5)
-
-        # Mark partial progress
-        jobs[job_id]['progress'] = 50
-
-        # Multiple websites placeholders
-        data_virustotal = {
-            'title': 'www.virustotal.com',
-            'details': 'Placeholder: additional VirusTotal data about IP'
-        }
-        data_shodan = {
-            'title': 'www.shodan.io',
-            'details': 'Placeholder: Shodan data about IP'
-        }
-        data_censys = {
-            'title': 'search.censys.io',
-            'details': 'Placeholder: Censys data about IP'
-        }
-        data_talos = {
-            'title': 'talosintelligence.com',
-            'details': 'Placeholder: Talos Intelligence data about IP'
-        }
-        data_securitytrails = {
-            'title': 'securitytrails.com',
-            'details': 'Placeholder: SecurityTrails data about IP'
-        }
-        data_ipinfo = {
-            'title': 'ipinfo.io',
-            'details': 'Placeholder: IPInfo data about IP'
-        }
-        data_greynoise = {
-            'title': 'viz.greynoise.io',
-            'details': 'Placeholder: GreyNoise data about IP'
-        }
-        data_another = {
-            'title': 'another.source.com',
-            'details': 'Placeholder: Another data source about IP'
-        }
-
-        # Combine them into a list
-        data_sources = [
-            data_virustotal,
-            data_shodan,
-            data_censys,
-            data_talos,
-            data_securitytrails,
-            data_ipinfo,
-            data_greynoise,
-            data_another
-        ]
-
-        # Save final result
-        jobs[job_id]['result'] = {
-            'ip': ip,
-            'isp': isp,
-            'country': country,
-            'reputation': reputation,
-            'malicious_score': malicious_score,
-            'comments': comments,
-            'data_sources': data_sources
-        }
-
-        jobs[job_id]['progress'] = 100
-        jobs[job_id]['status'] = 'Completed'
-        jobs[job_id]['message'] = f"IP analysis completed for {ip}."
-
-    except Exception as e:
-        jobs[job_id]['status'] = 'Error'
-        jobs[job_id]['message'] = f"Error processing IP {ip}: {str(e)}"
-
-@app.route('/single_ip_progress/<job_id>')
-def single_ip_progress(job_id):
-    """Progress page for single IP analysis."""
-    if job_id not in jobs:
-        flash('Invalid job ID.', 'danger')
-        return redirect(url_for('index'))
-    return render_template('single_ip_progress.html', job_id=job_id)
-
-@app.route('/single_ip/<job_id>/progress')
-def get_single_ip_progress(job_id):
-    """Return current progress/status for single IP analysis."""
-    if job_id in jobs:
-        return jsonify({
-            'status': jobs[job_id]['status'],
-            'progress': jobs[job_id]['progress'],
-            'message': jobs[job_id]['message']
-        })
-    else:
-        return jsonify({'status': 'Error', 'message': 'Invalid job ID.'})
-
-@app.route('/cancel_single_ip/<job_id>', methods=['POST'])
-def cancel_single_ip(job_id):
-    """Cancel the single IP analysis job."""
-    if job_id in jobs and jobs[job_id]['status'] == 'Processing' and jobs[job_id].get('is_single_ip'):
-        jobs[job_id]['cancel_event'].set()
-        jobs[job_id]['status'] = 'Canceled'
-        jobs[job_id]['message'] = 'IP analysis canceled by user.'
-        flash('IP analysis has been canceled.', 'info')
-    else:
-        flash('Cannot cancel this job.', 'warning')
-    return redirect(url_for('single_ip_progress', job_id=job_id))
-
-@app.route('/single_ip_result/<job_id>')
-def single_ip_result(job_id):
-    """
-    Display final single IP analysis on screen once background thread is done.
-    """
-    if job_id not in jobs or not jobs[job_id].get('is_single_ip'):
-        flash('Invalid job ID.', 'danger')
-        return redirect(url_for('index'))
-
-    if jobs[job_id]['status'] != 'Completed':
-        flash('Analysis is not yet complete.', 'info')
-        return redirect(url_for('single_ip_progress', job_id=job_id))
-
-    result_data = jobs[job_id].get('result', {})
     return render_template('single_ip_result.html', result=result_data)
-
-##################################
-#      Bulk IP Lookup Routes     #
-##################################
 
 @app.route('/bulk_upload')
 def bulk_upload():
-    """Page for Bulk IP Lookup file upload."""
     return render_template('bulk_upload.html')
 
 @app.route('/process_bulk_upload', methods=['POST'])
 def process_bulk_upload():
-    """Handle Bulk IP Lookup file upload and start analysis (Excel generated)."""
     file = request.files.get('file')
     api_key = session.get('api_key', '')
 
@@ -387,7 +211,6 @@ def process_bulk_upload():
     return redirect(url_for('bulk_progress', job_id=job_id))
 
 def process_file_thread(job_id, file_path, api_key):
-    """Background thread to process the uploaded IP file, then generate Excel."""
     try:
         file_ext = os.path.splitext(file_path)[1].lower()
         if file_ext == '.csv':
@@ -395,7 +218,6 @@ def process_file_thread(job_id, file_path, api_key):
         else:
             ip_df = pd.read_excel(file_path)
 
-        # Acceptable columns
         acceptable_columns = ['ip', 'ip_address', 'ipaddress', '"source_ip"']
         columns_lower = [col.lower() for col in ip_df.columns]
         ip_column = None
@@ -406,9 +228,7 @@ def process_file_thread(job_id, file_path, api_key):
 
         if not ip_column:
             jobs[job_id]['status'] = 'Error'
-            jobs[job_id]['message'] = (
-                "The uploaded file must contain a column named 'IP', 'ip_address', or 'IPAddress'."
-            )
+            jobs[job_id]['message'] = "The uploaded file must contain a column named 'IP', 'ip_address', or 'IPAddress'."
             return
 
         total_ips = len(ip_df)
@@ -444,7 +264,6 @@ def process_file_thread(job_id, file_path, api_key):
 
         output_df = pd.DataFrame(output_data)
 
-        # Save to Excel
         output_file = os.path.join(app.config['DOWNLOAD_FOLDER'], f'{job_id}_result.xlsx')
         wb = Workbook()
         ws = wb.active
@@ -461,7 +280,6 @@ def process_file_thread(job_id, file_path, api_key):
                     cell.fill = PatternFill(start_color="16365C", end_color="16365C", fill_type="solid")
                     cell.font = Font(color="FFFFFF", bold=True)
 
-        # Auto-adjust columns
         for column in ws.columns:
             max_length = max(len(str(cell.value)) for cell in column if cell.value)
             adjusted_width = (max_length + 2)
@@ -476,13 +294,11 @@ def process_file_thread(job_id, file_path, api_key):
         jobs[job_id]['status'] = 'Error'
         jobs[job_id]['message'] = f'Error processing file: {str(e)}'
     finally:
-        # Remove the uploaded file
         if os.path.exists(file_path):
             os.remove(file_path)
 
 @app.route('/bulk_progress/<job_id>')
 def bulk_progress(job_id):
-    """Progress page for the bulk IP analysis."""
     if job_id not in jobs:
         flash('Invalid job ID.', 'danger')
         return redirect(url_for('bulk_upload'))
@@ -490,7 +306,6 @@ def bulk_progress(job_id):
 
 @app.route('/progress/<job_id>')
 def get_progress(job_id):
-    """Return current progress/status for any job (bulk IP, bulk hash)."""
     if job_id in jobs:
         return jsonify({
             'status': jobs[job_id]['status'],
@@ -502,7 +317,6 @@ def get_progress(job_id):
 
 @app.route('/download/<job_id>')
 def download_result(job_id):
-    """Download IP or Hash analysis result (bulk only)."""
     if job_id in jobs and jobs[job_id]['status'] == 'Completed':
         return send_file(jobs[job_id]['result_file'], as_attachment=True)
     else:
@@ -511,7 +325,6 @@ def download_result(job_id):
 
 @app.route('/cancel/<job_id>', methods=['POST'])
 def cancel_job(job_id):
-    """Cancel a bulk IP or bulk hash analysis job."""
     if job_id in jobs and jobs[job_id]['status'] == 'Processing' and not jobs[job_id].get('is_single_ip'):
         jobs[job_id]['cancel_event'].set()
         jobs[job_id]['status'] = 'Canceled'
@@ -521,18 +334,12 @@ def cancel_job(job_id):
         flash('Cannot cancel this job.', 'warning')
     return redirect(url_for('bulk_progress', job_id=job_id))
 
-#######################################
-#   Bulk Hash Analysis (Modified)     #
-#######################################
-
 @app.route('/bulk_hash_upload')
 def bulk_hash_upload():
-    """Page for Bulk Hash Lookup file upload."""
     return render_template('bulk_hash_upload.html')
 
 @app.route('/process_bulk_hash_upload', methods=['POST'])
 def process_bulk_hash_upload():
-    """Handle Bulk Hash Lookup file upload and start analysis."""
     file = request.files.get('file')
     api_key = session.get('api_key', '')
 
@@ -572,10 +379,6 @@ def process_bulk_hash_upload():
     return redirect(url_for('bulk_hash_progress', job_id=job_id))
 
 def process_hash_file_thread(job_id, file_path, api_key):
-    """
-    Background thread to process a file of hashes, produce Excel output.
-    We have removed malicious count, total engines, and file names from the final output.
-    """
     try:
         file_ext = os.path.splitext(file_path)[1].lower()
         if file_ext == '.csv':
@@ -583,7 +386,6 @@ def process_hash_file_thread(job_id, file_path, api_key):
         else:
             hash_df = pd.read_excel(file_path)
 
-        # Acceptable hash columns
         acceptable_columns = ['hash', 'file_hash', 'sha256', 'md5', 'sha1']
         columns_lower = [col.lower() for col in hash_df.columns]
         hash_column = None
@@ -594,9 +396,7 @@ def process_hash_file_thread(job_id, file_path, api_key):
 
         if not hash_column:
             jobs[job_id]['status'] = 'Error'
-            jobs[job_id]['message'] = (
-                "The uploaded file must contain a column named 'hash', 'file_hash', 'sha256', 'md5', or 'sha1'."
-            )
+            jobs[job_id]['message'] = "The uploaded file must contain a column named 'hash', 'file_hash', 'sha256', 'md5', or 'sha1'."
             return
 
         total_hashes = len(hash_df)
@@ -613,27 +413,19 @@ def process_hash_file_thread(job_id, file_path, api_key):
                 jobs[job_id]['message'] = 'Hash analysis canceled by user.'
                 return
 
-            # Now get the minimal data for each hash
-            (
-                reputation,
-                malicious_count,
-                total_engines,
-                file_type,
-                malicious_score
-            ) = get_hash_reputation(api_key, file_hash)
+            reputation, malicious_count, total_engines, file_type, malicious_score = get_hash_reputation(api_key, file_hash)
 
             if reputation == "Invalid API Key":
                 jobs[job_id]['status'] = 'Error'
                 jobs[job_id]['message'] = 'Invalid API Key.'
                 return
 
-            # We do NOT include malicious_count, total_engines, or file names in the final output
             output_data.append({
                 "S. No.": idx + 1,
                 "File Hash": file_hash,
                 "Reputation": reputation,
                 "File Type": file_type,
-                "Malicious Score": malicious_score
+                "Malicious Score": malicious_score if malicious_score else "not found"
             })
 
             jobs[job_id]['progress'] = int((idx + 1) / total_hashes * 100)
@@ -656,7 +448,6 @@ def process_hash_file_thread(job_id, file_path, api_key):
                     cell.fill = PatternFill(start_color="16365C", end_color="16365C", fill_type="solid")
                     cell.font = Font(color="FFFFFF", bold=True)
 
-        # Auto-adjust columns
         for column in ws.columns:
             max_length = max(len(str(cell.value)) for cell in column if cell.value)
             adjusted_width = (max_length + 2)
@@ -676,28 +467,17 @@ def process_hash_file_thread(job_id, file_path, api_key):
 
 @app.route('/bulk_hash_progress/<job_id>')
 def bulk_hash_progress(job_id):
-    """Progress page for bulk hash analysis."""
     if job_id not in jobs:
         flash('Invalid job ID.', 'danger')
         return redirect(url_for('bulk_hash_upload'))
     return render_template('bulk_hash_progress.html', job_id=job_id)
 
-###############################
-#     Single Hash Lookup      #
-###############################
-
 @app.route('/hash_lookup')
 def hash_lookup():
-    """Page for single hash lookup."""
     return render_template('hash_lookup.html')
 
 @app.route('/lookup_hash', methods=['POST'])
 def lookup_hash():
-    """
-    Handle single hash reputation check.
-    (We haven't removed malicious_count / total_engines for single-hash display,
-     only for the bulk output.)
-    """
     file_hash = request.form['file_hash']
     api_key = session.get('api_key', '')
 
@@ -705,13 +485,7 @@ def lookup_hash():
         flash('Please ensure API Key is saved and File Hash is entered.', 'warning')
         return redirect(url_for('hash_lookup'))
 
-    (
-        reputation,
-        malicious_count,
-        total_engines,
-        file_type,
-        malicious_score
-    ) = get_hash_reputation(api_key, file_hash)
+    reputation, malicious_count, total_engines, file_type, malicious_score = get_hash_reputation(api_key, file_hash)
 
     if reputation == "Unknown":
         flash('Unable to retrieve hash reputation.', 'warning')
@@ -740,27 +514,19 @@ def lookup_hash():
 
     return render_template('hash_result.html', result=result_data)
 
-################################
-#       API Key Management     #
-################################
-
 @app.route('/api_key')
 def api_key_page():
-    """Page for API Key Management."""
     return render_template('api_key.html')
 
 @app.route('/save_api_key', methods=['POST'])
 def save_api_key_route():
-    """Save the API Key to the session."""
     api_key = request.form.get('api_key')
     if not api_key:
         flash('Please enter an API Key before saving.', 'warning')
         return redirect(url_for('api_key_page'))
-
     session['api_key'] = api_key
     flash('API Key saved successfully.', 'success')
     return redirect(url_for('api_key_page'))
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)

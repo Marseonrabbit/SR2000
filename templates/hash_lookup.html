@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Hash Reputation Check</h2>
+<form method="post" action="{{ url_for('lookup_hash') }}">
+    <label for="file_hash">File Hash:</label><br>
+    <input type="text" name="file_hash" id="file_hash" required><br><br>
+    <input type="submit" value="Lookup">
+</form>
+{% endblock %}

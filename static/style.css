@@ -1,0 +1,279 @@
+/* General Styles */
+body {
+    background-color: white;
+    color: black;
+    font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    padding: 20px;
+    flex: 1;
+}
+
+.nav {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #212529;
+}
+
+.custom-link {
+    color: #212529;
+    margin-right: 15px;
+    text-decoration: none;
+}
+
+.custom-link:hover {
+    color: #16181b;
+    text-decoration: underline;
+}
+
+/* Form Inputs */
+input[type="text"],
+input[type="file"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    color: black;
+    border: 1px solid #212529;
+    font-family: inherit;
+    border-radius: 4px;
+}
+
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    color: black;
+    border: 1px solid #212529;
+    font-family: inherit;
+    border-radius: 4px;
+}
+
+/* Buttons */
+input[type="submit"],
+.btn {
+    background-color: #212529;
+    color: white;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: inherit;
+    border-radius: 4px;
+}
+
+input[type="submit"]:hover,
+.btn:hover {
+    background-color: #16181b;
+}
+
+/* Alerts */
+.alert {
+    background-color: #ffcccc;
+    color: black;
+    border: none;
+    font-family: inherit;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+}
+
+.alert-success {
+    background-color: #dff0d8;
+    color: black;
+}
+
+.alert-danger {
+    background-color: #f2dede;
+    color: black;
+}
+
+.alert-warning {
+    background-color: #fcf8e3;
+    color: black;
+}
+
+.alert-info {
+    background-color: #d9edf7;
+    color: black;
+}
+
+/* Progress Bar */
+#progress-bar {
+    position: relative;
+    width: 100%;
+    height: 30px;
+    background-color: #f9f9f9;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #212529;
+}
+
+#progress-fill {
+    height: 100%;
+    width: 0%;
+    background-color: #212529;
+    transition: width 0.5s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 5px;
+}
+
+/* Comments Section */
+.comments-section {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    border: 1px solid #212529;
+}
+
+.comment {
+    margin-bottom: 15px;
+}
+
+.comment p {
+    margin: 5px 0;
+}
+
+.comment hr {
+    border: 0;
+    height: 1px;
+    background: #ddd;
+}
+
+/* Logo Container */
+.logo-container {
+    background-color: #212529;
+    padding: 10px;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.logo-container img {
+    height: 50px;
+}
+
+/* Footer */
+.footer {
+    background-color: #212529;
+    color: white;
+    text-align: right;
+    padding: 10px 20px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+/* Modal Styling */
+.modal-content {
+    background-color: white;
+    color: black;
+    font-family: inherit;
+    border-radius: 5px;
+}
+
+.modal-header,
+.modal-footer {
+    border: none;
+}
+
+.modal-footer .btn-danger {
+    background-color: #dc3545;
+    border: none;
+}
+
+.modal-footer .btn-danger:hover {
+    background-color: #bd2130;
+}
+
+/* Additional Styling for Forms */
+form {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"]:focus,
+input[type="file"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+    border-color: #16181b;
+    outline: none;
+    box-shadow: 0 0 5px rgba(22, 24, 27, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+    }
+
+    .custom-link {
+        margin-right: 10px;
+        font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    textarea {
+        font-size: 14px;
+    }
+
+    input[type="submit"],
+    .btn {
+        font-size: 14px;
+    }
+
+    .alert {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    #progress-bar {
+        height: 25px;
+    }
+
+    #progress-fill {
+        font-size: 14px;
+    }
+
+    .comments-section {
+        padding: 8px;
+    }
+
+    .comment {
+        margin-bottom: 10px;
+    }
+
+    .comment p {
+        margin: 4px 0;
+    }
+
+    .logo-container img {
+        height: 40px;
+    }
+
+    .footer {
+        padding: 8px 15px;
+    }
+}

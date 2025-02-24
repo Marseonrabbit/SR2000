@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Single IP Lookup</h2>
+<form method="post" action="{{ url_for('lookup_ip') }}" onsubmit="return validateIP()">
+    <label for="ip">IP Address:</label><br>
+    <input type="text" name="ip" id="ip" required><br><br>
+    <input type="submit" value="Lookup">
+</form>
+<script>
+    function validateIP() {
+        const ip = document.getElementById('ip').value;
+        const privateIPRegex = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.0\.0\.1$)/;
+        const broadcastIPRegex = /^(\d{1,3}\.){3}255$/;
+        if (privateIPRegex.test(ip) || broadcastIPRegex.test(ip)) {
+            alert("Please insert a public IP for analysis.");
+            return false;
+        }
+        return true;
+    }
+</script>
+{% endblock %}

@@ -1,18 +1,99 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Single IP Lookup</h2>
-<form method="post" action="{{ url_for('lookup_ip') }}" onsubmit="return validateIP()">
-    <label for="ip">IP Address:</label><br>
-    <input type="text" name="ip" id="ip" required><br><br>
-    <input type="submit" value="Lookup">
-</form>
+<div class="card main-card">
+    <div class="card-body">
+        <div class="text-center mb-5">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="main-logo mb-4">
+            <h2 class="card-title">IP Address Analysis</h2>
+            <p class="lead text-muted">Analyze IP addresses for security and reputation</p>
+        </div>
+
+        <form method="post" action="{{ url_for('lookup_ip') }}" onsubmit="return validateIP()" class="lookup-form">
+            <div class="form-group">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" 
+                           name="ip" 
+                           id="ip" 
+                           class="form-control form-control-lg" 
+                           placeholder="Enter IP Address (e.g., 8.8.8.8)"
+                           required>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-radar"></i> Analyze IP
+                </button>
+            </div>
+        </form>
+
+        <div class="external-tools mt-5">
+            <h4 class="text-center mb-4">Additional Analysis Tools</h4>
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-3">
+                    <a href="https://www.virustotal.com" target="_blank" class="tool-card">
+                        <i class="fas fa-shield-virus"></i>
+                        <span>VirusTotal</span>
+                    </a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="https://www.abuseipdb.com" target="_blank" class="tool-card">
+                        <i class="fas fa-ban"></i>
+                        <span>AbuseIPDB</span>
+                    </a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="https://www.shodan.io" target="_blank" class="tool-card">
+                        <i class="fas fa-search-location"></i>
+                        <span>Shodan</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="features mt-5">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <h5>Security Analysis</h5>
+                        <p>Check IP reputation and threat level</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <i class="fas fa-globe"></i>
+                        <h5>Geolocation</h5>
+                        <p>Identify country and network details</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-item">
+                        <i class="fas fa-comments"></i>
+                        <h5>Community Insights</h5>
+                        <p>View user reports and feedback</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function validateIP() {
         const ip = document.getElementById('ip').value;
         const privateIPRegex = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.0\.0\.1$)/;
         const broadcastIPRegex = /^(\d{1,3}\.){3}255$/;
         if (privateIPRegex.test(ip) || broadcastIPRegex.test(ip)) {
-            alert("Please insert a public IP for analysis.");
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid IP',
+                text: 'Please insert a public IP address for analysis.',
+                confirmButtonColor: '#3085d6'
+            });
             return false;
         }
         return true;

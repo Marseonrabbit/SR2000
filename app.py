@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 import os
 import pandas as pd
 import requests
-import re  # Import the re module for regular expressions
+import re
 from werkzeug.utils import secure_filename
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, PatternFill, Font, Border, Side
@@ -25,7 +25,9 @@ os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
 API_KEYS = [
     "9abba08d9d6ef52d9919348996426443426b420a161779da1308816d8334eb36",
     "3dbc013b459f54f7936863d83bcc0cfc35b181159240fb2ac58d518361e249bc",
-
+    "api_key_3",
+    "api_key_4",
+    "api_key_5"
 ]
 current_api_key_index = 0
 

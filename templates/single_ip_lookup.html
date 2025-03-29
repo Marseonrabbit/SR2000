@@ -1,9 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Single IP Lookup</h2>
-<form method="post" action="{{ url_for('lookup_ip') }}">
-    <label for="ip">IP Address:</label><br>
-    <input type="text" name="ip" id="ip"><br><br>
-    <input type="submit" value="Lookup">
-</form>
-{% endblock %}

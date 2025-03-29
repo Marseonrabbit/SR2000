@@ -1,30 +1,94 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Bulk Hash Lookup Progress</h2>
-<p id="message">Processing...</p>
-<div id="progress-bar">
-    <div id="progress-fill">
-        <span id="progress-text">0%</span>
+<div class="card main-card">
+    <div class="card-body">
+        <div class="text-center mb-5">
+            <i class="fas fa-sync fa-spin fa-3x text-primary mb-4"></i>
+            <h2 class="card-title">Processing Hashes</h2>
+            <p class="lead text-muted" id="message">Analyzing file hashes...</p>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress thin-progress">
+                <div id="progress-fill" 
+                     class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" 
+                     style="width: 0%">
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <span id="progress-text" class="progress-percentage">0%</span>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <form method="post" action="{{ url_for('cancel_job', job_id=job_id) }}" class="d-inline-block">
+                <button type="submit" class="btn btn-warning btn-lg">
+                    <i class="fas fa-stop-circle"></i> Cancel Analysis
+                </button>
+            </form>
+        </div>
     </div>
 </div>
-<form method="post" action="{{ url_for('cancel_job', job_id=job_id) }}">
-    <button type="submit" class="btn btn-warning">Cancel Analysis</button>
-</form>
+
+<!-- Completion Modal -->
 <div class="modal fade" id="completionModal" tabindex="-1" role="dialog" aria-labelledby="completionModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="completionModalLabel">Analysis Complete</h5>
-      </div>
-      <div class="modal-body">
-        Your analysis is done. Please download the file.
-      </div>
-      <div class="modal-footer">
-        <a href="" id="downloadLink" class="btn btn-danger">Download Results</a>
-      </div>
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="completionModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Analysis Complete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-file-download fa-3x text-success mb-3"></i>
+                <p class="lead">Your analysis is complete. The results are ready for download.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <a href="" id="downloadLink" class="btn btn-success btn-lg">
+                    <i class="fas fa-download me-2"></i>Download Results
+                </a>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
+
+<style>
+.progress-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.thin-progress {
+    height: 4px !important;
+    background-color: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.progress-percentage {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.modal-content {
+    border: none;
+    border-radius: 1rem;
+}
+
+.modal-header {
+    border-radius: 1rem 1rem 0 0;
+}
+</style>
+
 <script>
     var jobId = "{{ job_id }}";
     function getProgress() {
@@ -35,14 +99,15 @@
                 let progressFill = document.getElementById('progress-fill');
                 progressFill.style.width = data.progress + '%';
                 document.getElementById('progress-text').innerText = data.progress + '%';
+                
                 if (data.status === 'Completed') {
-                    $('#completionModal').modal('show');
                     document.getElementById('downloadLink').href = '/download/' + jobId;
+                    new bootstrap.Modal(document.getElementById('completionModal')).show();
                 } else if (data.status === 'Canceled') {
                     document.getElementById('progress-bar').style.display = 'none';
-                    document.getElementById('message').innerText = 'Analysis has been canceled.';
+                    document.getElementById('message').innerHTML = '<i class="fas fa-ban text-warning"></i> Analysis has been canceled.';
                 } else if (data.status === 'Error') {
-                    document.getElementById('message').innerText = data.message;
+                    document.getElementById('message').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> ' + data.message;
                 } else {
                     setTimeout(getProgress, 1000);
                 }

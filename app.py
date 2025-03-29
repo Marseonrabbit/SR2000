@@ -24,11 +24,7 @@ os.makedirs(app.config['DOWNLOAD_FOLDER'], exist_ok=True)
 # List of API keys to rotate through
 API_KEYS = [
     "9abba08d9d6ef52d9919348996426443426b420a161779da1308816d8334eb36",
-    "3dbc013b459f54f7936863d83bcc0cfc35b181159240fb2ac58d518361e249bc",
-    "api_key_3",
-    "api_key_4",
-    "api_key_5"
-]
+    "3dbc013b459f54f7936863d83bcc0cfc35b181159240fb2ac58d518361e249bc",]
 current_api_key_index = 0
 
 jobs = {}

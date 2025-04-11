@@ -1,24 +1,202 @@
 {% extends "base.html" %}
+
+{% block title %}Hash Analysis Results{% endblock %}
+
 {% block content %}
-<h2>Hash Lookup Result</h2>
-<p><strong>File Hash:</strong> {{ result.file_hash }}</p>
-<p><strong>Reputation:</strong> {{ result.reputation }}</p>
-<p><strong>Malicious Detections:</strong> {{ result.malicious_count }} out of {{ result.total_engines }} engines</p>
-<p><strong>File Type:</strong> {{ result.file_type }}</p>
-<p><strong>Malicious Score (VirusTotal):</strong> {{ result.malicious_score }}</p>
-{% if result.comments %}
-    <h3>Top 5 Community Comments</h3>
-    <div class="comments-section">
-        {% for comment in result.comments %}
-            <div class="comment">
-                <p><strong>{{ comment.user }}</strong> <em>({{ comment.date }})</em></p>
-                <p>{{ comment.comment }}</p>
-                <hr>
+<div class="card slide-in-up">
+    <div class="card-body">
+        <h2 class="card-title text-center mb-4">Hash Analysis Results</h2>
+        
+        <div class="result-summary mb-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="result-card fade-in" style="animation-delay: 0.1s">
+                        <div class="result-card-header">
+                            <span><i class="fas fa-info-circle"></i> Hash Information</span>
+                            <a href="https://www.virustotal.com/gui/file/{{ result.file_hash }}" target="_blank" class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="View on VirusTotal">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                        <div class="result-card-body">
+                            <div class="result-item">
+                                <span class="result-item-label">Hash Value:</span>
+                                <span class="result-item-value text-break">{{ result.file_hash }}</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-item-label">Hash Type:</span>
+                                <span class="result-item-value">
+                                    {% if result.file_hash|length == 32 %}
+                                        MD5
+                                    {% elif result.file_hash|length == 40 %}
+                                        SHA-1
+                                    {% elif result.file_hash|length == 64 %}
+                                        SHA-256
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-item-label">File Type:</span>
+                                <span class="result-item-value">{{ result.file_type }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="result-card fade-in" style="animation-delay: 0.2s">
+                        <div class="result-card-header">
+                            <span><i class="fas fa-shield-alt"></i> Security Analysis</span>
+                        </div>
+                        <div class="result-card-body">
+                            <div class="result-item">
+                                <span class="result-item-label">Reputation:</span>
+                                <span class="badge badge-{{ result.reputation|lower|replace(' ', '-') }}">
+                                    {{ result.reputation }}
+                                </span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-item-label">Detection Ratio:</span>
+                                <span class="result-item-value">{{ result.malicious_count }} / {{ result.total_engines }}</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-item-label">Malicious Score:</span>
+                                <span class="result-item-value">{{ result.malicious_score }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        {% endfor %}
+        </div>
+
+        <div class="threat-assessment mb-4 fade-in" style="animation-delay: 0.3s">
+            <div class="result-card">
+                <div class="result-card-header">
+                    <i class="fas fa-chart-line"></i> Threat Assessment
+                </div>
+                <div class="result-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if result.reputation == 'Safe' %}
+                                <div class="alert alert-success mb-md-0">
+                                    <i class="fas fa-check-circle fa-2x float-start me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading">File is Safe</h6>
+                                        <p class="mb-0">This file hash has not been identified as malicious by any security vendors.</p>
+                                    </div>
+                                </div>
+                            {% elif result.reputation == 'Low Risk' or result.reputation == 'Moderate Risk' %}
+                                <div class="alert alert-warning mb-md-0">
+                                    <i class="fas fa-exclamation-triangle fa-2x float-start me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading">Potential Risk Detected</h6>
+                                        <p class="mb-0">This file has been flagged by some security vendors. Exercise caution when using.</p>
+                                    </div>
+                                </div>
+                            {% elif result.reputation == 'High Risk' %}
+                                <div class="alert alert-danger mb-md-0">
+                                    <i class="fas fa-virus fa-2x float-start me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading">High Risk Detected</h6>
+                                        <p class="mb-0">This file has been detected as malicious by multiple security vendors.</p>
+                                    </div>
+                                </div>
+                            {% elif result.reputation == 'Not Found' %}
+                                <div class="alert alert-info mb-md-0">
+                                    <i class="fas fa-search fa-2x float-start me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading">Hash Not Found</h6>
+                                        <p class="mb-0">This file hash has not been analyzed by any security vendors yet.</p>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-secondary mb-md-0">
+                                    <i class="fas fa-question-circle fa-2x float-start me-3"></i>
+                                    <div>
+                                        <h6 class="alert-heading">Unknown Status</h6>
+                                        <p class="mb-0">The status of this file hash could not be determined.</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <h6><i class="fas fa-chart-pie me-2"></i> Detection Distribution</h6>
+                            <div class="progress mb-3">
+                                {% if result.total_engines > 0 %}
+                                    {% set malicious_percent = (result.malicious_count / result.total_engines * 100)|int %}
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ malicious_percent }}%" 
+                                         aria-valuenow="{{ malicious_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ malicious_percent }}%
+                                    </div>
+                                {% else %}
+                                    <div class="progress-bar" role="progressbar" style="width: 0%" 
+                                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                {% endif %}
+                            </div>
+                            <div class="external-links mt-3">
+                                <h6><i class="fas fa-external-link-alt me-2"></i> Additional Resources:</h6>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="https://www.virustotal.com/gui/file/{{ result.file_hash }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-secondary text-start mb-2">
+                                        <i class="fas fa-shield-virus me-2"></i> View on VirusTotal
+                                    </a>
+                                    <a href="https://www.hybrid-analysis.com/search?query={{ result.file_hash }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-secondary text-start mb-2">
+                                        <i class="fas fa-microscope me-2"></i> Hybrid Analysis
+                                    </a>
+                                    <a href="https://www.joesandbox.com/search?q={{ result.file_hash }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-secondary text-start">
+                                        <i class="fas fa-box me-2"></i> Joe Sandbox
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if result.comments %}
+        <div class="comments-section mt-4 fade-in" style="animation-delay: 0.4s">
+            <h3 class="section-title text-center mb-4">
+                <i class="fas fa-comments"></i> Community Comments
+            </h3>
+            <div class="comment-list">
+                {% for comment in result.comments %}
+                <div class="comment-card">
+                    <div class="comment-header">
+                        <div class="comment-user">
+                            <i class="fas fa-user-circle"></i> {{ comment.user }}
+                        </div>
+                        <div class="comment-date">
+                            <i class="fas fa-calendar-alt"></i> {{ comment.date }}
+                        </div>
+                    </div>
+                    <div class="comment-body">
+                        {{ comment.comment }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="no-comments text-center mt-4 fade-in" style="animation-delay: 0.4s">
+            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+            <h5 class="text-muted">No Community Comments Available</h5>
+            <p class="text-muted small">There are no reported comments for this file hash.</p>
+        </div>
+        {% endif %}
+
+        <div class="actions text-center mt-4">
+            <a href="{{ url_for('hash_lookup') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-search"></i> New Lookup
+            </a>
+            
+            <a href="{{ url_for('bulk_hash_upload') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                <i class="fas fa-upload"></i> Bulk Hash Analysis
+            </a>
+        </div>
     </div>
-{% else %}
-    <h3>No Community Comments Available.</h3>
-{% endif %}
-<a href="{{ url_for('hash_lookup') }}" class="btn btn-primary">Back to Lookup</a>
+</div>
 {% endblock %}

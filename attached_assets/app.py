@@ -2,22 +2,16 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 import os
 import pandas as pd
 import requests
-import re
-import json
+import re  # Import the re module for regular expressions
 from werkzeug.utils import secure_filename
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, PatternFill, Font, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from threading import Thread, Event
 import uuid
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SESSION_SECRET', os.environ.get('SECRET_KEY', 'your_secret_key'))
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
 DOWNLOAD_FOLDER = os.environ.get('DOWNLOAD_FOLDER', 'downloads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -303,7 +297,6 @@ def process_file_thread(job_id, file_path):
         jobs[job_id]['result_file'] = output_file
         jobs[job_id]['message'] = 'IP analysis completed successfully.'
     except Exception as e:
-        logger.error(f"Error processing file: {str(e)}")
         jobs[job_id]['status'] = 'Error'
         jobs[job_id]['message'] = f'Error processing file: {str(e)}'
     finally:
@@ -336,66 +329,16 @@ def download_result(job_id):
         flash('Result file not available.', 'warning')
         return redirect(url_for('bulk_upload'))
 
-@app.route('/cancel_job/<job_id>', methods=['POST'])
+@app.route('/cancel/<job_id>', methods=['POST'])
 def cancel_job(job_id):
-    if job_id in jobs:
+    if job_id in jobs and jobs[job_id]['status'] == 'Processing' and not jobs[job_id].get('is_single_ip'):
         jobs[job_id]['cancel_event'].set()
-        flash('Job cancellation requested. Please wait...', 'warning')
+        jobs[job_id]['status'] = 'Canceled'
+        jobs[job_id]['message'] = 'Analysis canceled by user.'
+        flash('Analysis has been canceled.', 'info')
     else:
-        flash('Invalid job ID.', 'danger')
-    
-    if jobs.get(job_id, {}).get('is_single_ip', False):
-        return redirect(url_for('hash_lookup'))
-    elif 'hash' in job_id:
-        return redirect(url_for('bulk_hash_upload'))
-    else:
-        return redirect(url_for('bulk_upload'))
-
-@app.route('/hash_lookup')
-def hash_lookup():
-    return render_template('hash_lookup.html')
-
-@app.route('/lookup_hash', methods=['POST'])
-def lookup_hash():
-    file_hash = request.form['file_hash'].strip()
-    
-    # Validate hash format
-    hash_patterns = {
-        'md5': r'^[a-fA-F0-9]{32}$',
-        'sha1': r'^[a-fA-F0-9]{40}$',
-        'sha256': r'^[a-fA-F0-9]{64}$'
-    }
-    
-    valid_hash = False
-    for hash_type, pattern in hash_patterns.items():
-        if re.match(pattern, file_hash):
-            valid_hash = True
-            break
-    
-    if not valid_hash:
-        flash('Invalid hash format. Please provide a valid MD5, SHA-1, or SHA-256 hash.', 'warning')
-        return redirect(url_for('hash_lookup'))
-    
-    api_key = get_next_api_key()
-    reputation, malicious_count, total_engines, file_type, malicious_score = get_hash_reputation(api_key, file_hash)
-    
-    if reputation == "Invalid API Key":
-        flash('Invalid API Key.', 'danger')
-        return redirect(url_for('hash_lookup'))
-    
-    comments = get_comments(api_key, 'files', file_hash, limit=5)
-    
-    result_data = {
-        'file_hash': file_hash,
-        'reputation': reputation,
-        'malicious_count': malicious_count,
-        'total_engines': total_engines,
-        'file_type': file_type,
-        'malicious_score': malicious_score,
-        'comments': comments
-    }
-    
-    return render_template('hash_result.html', result=result_data)
+        flash('Cannot cancel this job.', 'warning')
+    return redirect(url_for('bulk_progress', job_id=job_id))
 
 @app.route('/bulk_hash_upload')
 def bulk_hash_upload():
@@ -418,14 +361,14 @@ def process_bulk_hash_upload():
     file.save(file_path)
     flash('File successfully uploaded. Starting hash analysis...', 'success')
     
-    job_id = f"hash_{str(uuid.uuid4())}"
+    job_id = str(uuid.uuid4())
     jobs[job_id] = {
         'status': 'Processing',
         'progress': 0,
         'result_file': None,
-        'message': 'File successfully uploaded. Starting hash analysis...',
+        'message': 'File successfully uploaded. Starting analysis...',
         'cancel_event': Event(),
-        'is_hash': True
+        'is_single_ip': False
     }
     thread = Thread(target=process_hash_file_thread, args=(job_id, file_path))
     thread.start()
@@ -440,50 +383,23 @@ def process_hash_file_thread(job_id, file_path):
         else:
             hash_df = pd.read_excel(file_path)
         
-        # If there's only one column without a header, use it as-is
-        if len(hash_df.columns) == 1 and hash_df.columns[0].startswith('Unnamed'):
-            hash_column = hash_df.columns[0]
-        else:
-            # Try to find a column that contains hashes
-            hash_patterns = {
-                'md5': r'^[a-fA-F0-9]{32}$',
-                'sha1': r'^[a-fA-F0-9]{40}$',
-                'sha256': r'^[a-fA-F0-9]{64}$'
-            }
-            
-            hash_column = None
-            for col in hash_df.columns:
-                # Check if most values in the column match hash patterns
-                sample = hash_df[col].astype(str).iloc[:min(5, len(hash_df))].str.strip()
-                matches = 0
-                for value in sample:
-                    for pattern in hash_patterns.values():
-                        if re.match(pattern, value):
-                            matches += 1
-                            break
-                
-                if matches / len(sample) >= 0.6:  # If 60% or more match a hash pattern
-                    hash_column = col
-                    break
-            
-            # If no column is found, try common column names
-            if not hash_column:
-                acceptable_columns = ['hash', 'file_hash', 'filehash', 'md5', 'sha1', 'sha256']
-                columns_lower = [col.lower() for col in hash_df.columns]
-                for col in acceptable_columns:
-                    if col.lower() in columns_lower:
-                        hash_column = hash_df.columns[columns_lower.index(col.lower())]
-                        break
+        acceptable_columns = ['hash', 'file_hash', 'sha256', 'md5', 'sha1']
+        columns_lower = [col.lower() for col in hash_df.columns]
+        hash_column = None
+        for col in acceptable_columns:
+            if col.lower() in columns_lower:
+                hash_column = hash_df.columns[columns_lower.index(col.lower())]
+                break
         
         if not hash_column:
             jobs[job_id]['status'] = 'Error'
-            jobs[job_id]['message'] = "Could not identify a column with hash values in the uploaded file."
+            jobs[job_id]['message'] = "The uploaded file must contain a column named 'hash', 'file_hash', 'sha256', 'md5', or 'sha1'."
             return
         
         total_hashes = len(hash_df)
         if total_hashes == 0:
             jobs[job_id]['status'] = 'Error'
-            jobs[job_id]['message'] = "The uploaded file contains no hash values."
+            jobs[job_id]['message'] = "The uploaded file contains no hashes."
             return
         
         output_data = []
@@ -493,28 +409,7 @@ def process_hash_file_thread(job_id, file_path):
                 jobs[job_id]['message'] = 'Hash analysis canceled by user.'
                 return
             
-            # Clean and validate hash format
-            file_hash = str(file_hash).strip()
-            valid_hash = False
-            for pattern in hash_patterns.values():
-                if re.match(pattern, file_hash):
-                    valid_hash = True
-                    break
-            
-            if not valid_hash:
-                output_data.append({
-                    "S. No.": idx + 1,
-                    "Hash": file_hash,
-                    "Hash Type": "Invalid Format",
-                    "Reputation": "N/A",
-                    "File Type": "N/A",
-                    "Detection Ratio": "N/A"
-                })
-                continue
-            
-            hash_type = "MD5" if len(file_hash) == 32 else "SHA-1" if len(file_hash) == 40 else "SHA-256"
             reputation, malicious_count, total_engines, file_type, malicious_score = get_hash_reputation(api_key, file_hash)
-            
             if reputation == "Invalid API Key":
                 jobs[job_id]['status'] = 'Error'
                 jobs[job_id]['message'] = 'Invalid API Key.'
@@ -522,19 +417,18 @@ def process_hash_file_thread(job_id, file_path):
             
             output_data.append({
                 "S. No.": idx + 1,
-                "Hash": file_hash,
-                "Hash Type": hash_type,
+                "File Hash": file_hash,
                 "Reputation": reputation,
                 "File Type": file_type,
-                "Detection Ratio": malicious_score
+                "Malicious Score": malicious_score if malicious_score else "not found"
             })
             jobs[job_id]['progress'] = int((idx + 1) / total_hashes * 100)
         
         output_df = pd.DataFrame(output_data)
-        output_file = os.path.join(app.config['DOWNLOAD_FOLDER'], f'{job_id}_result.xlsx')
+        output_file = os.path.join(app.config['DOWNLOAD_FOLDER'], f'{job_id}_hash_result.xlsx')
         wb = Workbook()
         ws = wb.active
-        ws.title = "Hash Analysis Results"
+        ws.title = "Hash Details"
         
         for r_idx, row in enumerate(dataframe_to_rows(output_df, index=False, header=True), 1):
             for c_idx, value in enumerate(row, 1):
@@ -557,7 +451,6 @@ def process_hash_file_thread(job_id, file_path):
         jobs[job_id]['result_file'] = output_file
         jobs[job_id]['message'] = 'Hash analysis completed successfully.'
     except Exception as e:
-        logger.error(f"Error processing hash file: {str(e)}")
         jobs[job_id]['status'] = 'Error'
         jobs[job_id]['message'] = f'Error processing file: {str(e)}'
     finally:
@@ -571,164 +464,43 @@ def bulk_hash_progress(job_id):
         return redirect(url_for('bulk_hash_upload'))
     return render_template('bulk_hash_progress.html', job_id=job_id)
 
-@app.route('/osint_framework')
-def osint_framework():
-    try:
-        # Load OSINT framework data
-        with open('static/data/osint_framework.json', 'r') as f:
-            osint_data = json.load(f)
-        return render_template('osint_framework.html', osint_data=osint_data)
-    except FileNotFoundError:
-        # If file not found, initialize with default structure
-        osint_data = {
-            "name": "OSINT Framework",
-            "children": [
-                {
-                    "name": "Domain & IP Research",
-                    "children": [
-                        {"name": "VirusTotal", "url": "https://www.virustotal.com/"},
-                        {"name": "AbuseIPDB", "url": "https://www.abuseipdb.com/"},
-                        {"name": "Shodan", "url": "https://www.shodan.io/"},
-                        {"name": "SecurityTrails", "url": "https://securitytrails.com/"}
-                    ]
-                },
-                {
-                    "name": "Email & Username Research",
-                    "children": [
-                        {"name": "Hunter.io", "url": "https://hunter.io/"},
-                        {"name": "Email-Format", "url": "https://www.email-format.com/"},
-                        {"name": "Have I Been Pwned", "url": "https://haveibeenpwned.com/"}
-                    ]
-                },
-                {
-                    "name": "Social Media Research",
-                    "children": [
-                        {"name": "Sherlock", "url": "https://github.com/sherlock-project/sherlock"},
-                        {"name": "Social-Analyzer", "url": "https://github.com/qeeqbox/social-analyzer"}
-                    ]
-                }
-            ]
-        }
-        
-        # Create directory if it doesn't exist
-        os.makedirs('static/data', exist_ok=True)
-        
-        # Save default data
-        with open('static/data/osint_framework.json', 'w') as f:
-            json.dump(osint_data, f, indent=2)
-            
-        return render_template('osint_framework.html', osint_data=osint_data)
+@app.route('/hash_lookup')
+def hash_lookup():
+    return render_template('hash_lookup.html')
 
-@app.route('/google_dorks')
-def google_dorks():
-    try:
-        # Load Google Dorks data
-        with open('static/data/google_dorks.json', 'r') as f:
-            dorks_data = json.load(f)
-        
-        # Get categories for filter
-        categories = set()
-        for dork in dorks_data:
-            categories.add(dork.get('category', 'General'))
-        
-        categories = sorted(list(categories))
-        
-        return render_template('google_dorks.html', dorks=dorks_data, categories=categories)
-    except FileNotFoundError:
-        # If file not found, initialize with default data
-        dorks_data = [
-            {
-                "category": "Sensitive Files",
-                "query": "filetype:pdf site:example.com confidential",
-                "description": "Finds confidential PDF files on a specific domain"
-            },
-            {
-                "category": "Sensitive Files",
-                "query": "filetype:xls OR filetype:xlsx intext:password",
-                "description": "Finds Excel sheets containing passwords"
-            },
-            {
-                "category": "Website Vulnerabilities",
-                "query": "inurl:wp-content/uploads/",
-                "description": "Finds WordPress uploads directory which might contain sensitive files"
-            },
-            {
-                "category": "Website Vulnerabilities",
-                "query": "intext:\"sql syntax near\" | intext:\"syntax error has occurred\" | intext:\"incorrect syntax near\" | intext:\"unexpected end of SQL command\" | intext:\"Warning: mysql_connect()\" | intext:\"Warning: mysql_query()\" | intext:\"Warning: pg_connect()\"",
-                "description": "Finds pages with potential SQL errors"
-            },
-            {
-                "category": "Exposed Credentials",
-                "query": "intext:\"INDEX OF /\" intext:\".env\"",
-                "description": "Finds exposed environment files which may contain secrets"
-            },
-            {
-                "category": "Exposed Credentials",
-                "query": "intitle:\"Index of\" intext:\".sql\"",
-                "description": "Finds exposed SQL database dumps"
-            },
-            {
-                "category": "Configuration Files",
-                "query": "intitle:\"Index of\" intext:\"config.php\"",
-                "description": "Finds exposed PHP configuration files"
-            },
-            {
-                "category": "Configuration Files",
-                "query": "intitle:\"Index of\" \"web.config\"",
-                "description": "Finds exposed web.config files from Microsoft IIS servers"
-            },
-            {
-                "category": "Network Devices",
-                "query": "intitle:\"Login Page\" inurl:\"management\"",
-                "description": "Finds login pages for network management interfaces"
-            },
-            {
-                "category": "Network Devices",
-                "query": "inurl:\"/sws/index.html\"",
-                "description": "Finds Sonicwall routers login pages"
-            },
-            {
-                "category": "Open Directories",
-                "query": "intitle:\"Index of /\" \".git\"",
-                "description": "Finds exposed Git repositories which may contain sensitive information"
-            },
-            {
-                "category": "Exposed APIs",
-                "query": "intext:\"api_key\" | intext:\"apiKey\" | intext:\"api key\" | intext:\"apikey\"",
-                "description": "Finds exposed API keys in various formats"
-            },
-            {
-                "category": "Exposed APIs",
-                "query": "intitle:\"swagger ui\" inurl:api",
-                "description": "Finds Swagger UI API documentation pages"
-            },
-            {
-                "category": "IP Addresses",
-                "query": "site:pastebin.com \"ip address\"",
-                "description": "Finds IP addresses on Pastebin that might be part of data leaks"
-            },
-            {
-                "category": "IP Addresses",
-                "query": "\"ip camera\" | intitle:\"webcam\" inurl:\"/view/index.shtml\"",
-                "description": "Finds exposed IP cameras"
-            }
-        ]
-            
-        # Create directory if it doesn't exist
-        os.makedirs('static/data', exist_ok=True)
-        
-        # Save default data
-        with open('static/data/google_dorks.json', 'w') as f:
-            json.dump(dorks_data, f, indent=2)
-        
-        # Get categories for filter
-        categories = set()
-        for dork in dorks_data:
-            categories.add(dork.get('category', 'General'))
-        
-        categories = sorted(list(categories))
-            
-        return render_template('google_dorks.html', dorks=dorks_data, categories=categories)
+@app.route('/lookup_hash', methods=['POST'])
+def lookup_hash():
+    file_hash = request.form['file_hash']
+    if not file_hash:
+        flash('Please enter a File Hash.', 'warning')
+        return redirect(url_for('hash_lookup'))
+    
+    api_key = get_next_api_key()
+    reputation, malicious_count, total_engines, file_type, malicious_score = get_hash_reputation(api_key, file_hash)
+    if reputation == "Unknown":
+        flash('Unable to retrieve hash reputation.', 'warning')
+        return redirect(url_for('hash_lookup'))
+    elif reputation == "Not Found":
+        flash('File hash not found in VirusTotal database.', 'info')
+        return redirect(url_for('hash_lookup'))
+    elif reputation == "Invalid API Key":
+        flash('Invalid API Key.', 'danger')
+        return redirect(url_for('hash_lookup'))
+    elif reputation == "Error":
+        flash('An error occurred while retrieving data.', 'danger')
+        return redirect(url_for('hash_lookup'))
+    
+    comments = get_comments(api_key, 'files', file_hash, limit=5)
+    result_data = {
+        'file_hash': file_hash,
+        'reputation': reputation,
+        'malicious_count': malicious_count,
+        'total_engines': total_engines,
+        'file_type': file_type,
+        'malicious_score': malicious_score,
+        'comments': comments
+    }
+    return render_template('hash_result.html', result=result_data)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Google Dorks Database{% endblock %}
+
+{% block content %}
+<div class="card slide-in-up">
+    <div class="card-body">
+        <div class="text-center mb-5 fade-in">
+            <i class="fab fa-google fa-3x text-primary mb-4"></i>
+            <h2 class="card-title">Google Dorks Database</h2>
+            <p class="lead text-muted">Advanced search queries for security research and OSINT</p>
+        </div>
+
+        <div class="dorks-search mb-4 fade-in" style="animation-delay: 0.1s">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" id="dork-search" class="form-control" placeholder="Search Google Dorks...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select id="dork-category-filter" class="form-select">
+                                <option value="all">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dorks-info mt-4 mb-4 fade-in" style="animation-delay: 0.2s">
+            <div class="result-card">
+                <div class="result-card-header">
+                    <i class="fas fa-info-circle"></i> What are Google Dorks?
+                </div>
+                <div class="result-card-body">
+                    <p>Google Dorks (also known as Google Dorking) are advanced search queries that use Google's search operators to find specific information that's not easily accessible through regular searches. Security professionals use them for:</p>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <ul>
+                                <li>Finding security vulnerabilities on websites</li>
+                                <li>Discovering exposed sensitive files</li>
+                                <li>Identifying configuration issues</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul>
+                                <li>Locating exposed login pages</li>
+                                <li>Finding exposed database information</li>
+                                <li>OSINT (Open Source Intelligence) gathering</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> Only use these queries for legitimate security research on systems you own or have permission to test. Using these for unauthorized access is illegal.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dorks-list mt-5 fade-in" style="animation-delay: 0.3s">
+            <h4 class="text-center mb-4 section-title">Google Dorks Collection</h4>
+            <div class="row" id="dorks-container">
+                {% for dork in dorks %}
+                <div class="col-md-6 mb-4 dork-item" data-category="{{ dork.category }}">
+                    <div class="dork-card h-100">
+                        <div class="dork-category">{{ dork.category }}</div>
+                        <div class="dork-query position-relative">
+                            {{ dork.query }}
+                            <button class="copy-btn" data-query="{{ dork.query }}" title="Copy to clipboard">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="dork-description">{{ dork.description }}</div>
+                        <div class="dork-actions">
+                            <a href="https://www.google.com/search?q={{ dork.query|urlencode }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-1"></i> Run on Google
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="dorks-resources mt-5 fade-in" style="animation-delay: 0.4s">
+            <h4 class="text-center mb-4 section-title">Google Search Operators</h4>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <h5 class="feature-title">Basic Operators</h5>
+                        <ul class="text-start small">
+                            <li><code>site:</code> - Limit to a specific domain</li>
+                            <li><code>filetype:</code> - Find specific file types</li>
+                            <li><code>inurl:</code> - Find text in URL</li>
+                            <li><code>intitle:</code> - Find text in page title</li>
+                            <li><code>intext:</code> - Find text in page content</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h5 class="feature-title">Advanced Operators</h5>
+                        <ul class="text-start small">
+                            <li><code>cache:</code> - Show Google's cached version</li>
+                            <li><code>related:</code> - Find related websites</li>
+                            <li><code>OR</code> - Logical OR operator</li>
+                            <li><code>-</code> - Exclude terms</li>
+                            <li><code>"exact phrase"</code> - Find exact phrase</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fas fa-puzzle-piece"></i>
+                        </div>
+                        <h5 class="feature-title">Combining Operators</h5>
+                        <ul class="text-start small">
+                            <li><code>site:example.com filetype:pdf</code></li>
+                            <li><code>intitle:"index of" intext:password</code></li>
+                            <li><code>inurl:admin -site:example.com</code></li>
+                            <li><code>site:*.edu "confidential"</code></li>
+                            <li><code>filetype:xls OR filetype:xlsx</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize copy buttons
+        const copyButtons = document.querySelectorAll('.copy-btn');
+        copyButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const query = this.getAttribute('data-query');
+                navigator.clipboard.writeText(query).then(() => {
+                    // Change button text temporarily
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                    }, 2000);
+                    
+                    // Show toast notification
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Copied to clipboard!',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        toast: true
+                    });
+                });
+            });
+        });
+        
+        // Search and filter functionality
+        const searchInput = document.getElementById('dork-search');
+        const categoryFilter = document.getElementById('dork-category-filter');
+        const dorkItems = document.querySelectorAll('.dork-item');
+        
+        function filterDorks() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+            
+            let visibleCount = 0;
+            
+            dorkItems.forEach(item => {
+                const dorkCard = item.querySelector('.dork-card');
+                const query = dorkCard.querySelector('.dork-query').textContent.toLowerCase();
+                const description = dorkCard.querySelector('.dork-description').textContent.toLowerCase();
+                const category = item.getAttribute('data-category');
+                
+                const matchesSearch = query.includes(searchTerm) || description.includes(searchTerm);
+                const matchesCategory = selectedCategory === 'all' || category === selectedCategory;
+                
+                if (matchesSearch && matchesCategory) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Show message if no results
+            const container = document.getElementById('dorks-container');
+            let noResultsMessage = container.querySelector('.no-results-message');
+            
+            if (visibleCount === 0) {
+                if (!noResultsMessage) {
+                    noResultsMessage = document.createElement('div');
+                    noResultsMessage.className = 'col-12 text-center py-5 no-results-message';
+                    noResultsMessage.innerHTML = `
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No matching Google Dorks found</h5>
+                        <p class="text-muted">Try adjusting your search terms or filters</p>
+                    `;
+                    container.appendChild(noResultsMessage);
+                }
+            } else if (noResultsMessage) {
+                noResultsMessage.remove();
+            }
+        }
+        
+        searchInput.addEventListener('input', filterDorks);
+        categoryFilter.addEventListener('change', filterDorks);
+        
+        // Add animation to dork cards
+        dorkItems.forEach((item, index) => {
+            const card = item.querySelector('.dork-card');
+            card.style.animationDelay = `${0.05 * index}s`;
+            card.classList.add('fade-in');
+        });
+    });
+</script>
+{% endblock %}

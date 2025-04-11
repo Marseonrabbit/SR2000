@@ -1,14 +1,19 @@
 {% extends "base.html" %}
+
+{% block title %}IP Address Analysis Tool{% endblock %}
+
 {% block content %}
-<div class="card main-card">
+<div class="card slide-in-up">
     <div class="card-body">
-        <div class="text-center mb-5">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="main-logo mb-4">
+        <div class="text-center mb-5 fade-in">
+            <div class="logo-container d-inline-block mb-4">
+                <img src="{{ url_for('static', filename='svg/animated-logo.svg') }}" alt="Logo" class="main-logo">
+            </div>
             <h2 class="card-title">IP Address Analysis</h2>
-            <p class="lead text-muted">Analyze IP addresses for security and reputation</p>
+            <p class="lead text-muted">Analyze IP addresses for security reputation and threat intelligence</p>
         </div>
 
-        <form method="post" action="{{ url_for('lookup_ip') }}" onsubmit="return validateIP()" class="lookup-form">
+        <form method="post" action="{{ url_for('lookup_ip') }}" id="ip-form" class="lookup-form">
             <div class="form-group">
                 <div class="input-group">
                     <span class="input-group-text">
@@ -16,10 +21,13 @@
                     </span>
                     <input type="text" 
                            name="ip" 
-                           id="ip" 
+                           id="ip-input" 
                            class="form-control form-control-lg" 
                            placeholder="Enter IP Address (e.g., 8.8.8.8)"
                            required>
+                </div>
+                <div class="text-muted mt-2 small">
+                    <i class="fas fa-info-circle"></i> Enter a public IP address for analysis
                 </div>
             </div>
 
@@ -30,73 +38,92 @@
             </div>
         </form>
 
-        <div class="external-tools mt-5">
-            <h4 class="text-center mb-4">Additional Analysis Tools</h4>
-            <div class="row justify-content-center">
-                <div class="col-md-4 mb-3">
-                    <a href="https://www.virustotal.com" target="_blank" class="tool-card">
-                        <i class="fas fa-shield-virus"></i>
-                        <span>VirusTotal</span>
-                    </a>
+        <div class="features mt-5">
+            <h4 class="text-center mb-4 section-title">Key Features</h4>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card fade-in" style="animation-delay: 0.1s">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h5 class="feature-title">Security Analysis</h5>
+                        <p class="feature-description">Check IP reputation and threat level from multiple security providers</p>
+                    </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <a href="https://www.abuseipdb.com" target="_blank" class="tool-card">
-                        <i class="fas fa-ban"></i>
-                        <span>AbuseIPDB</span>
-                    </a>
+                <div class="col-md-4">
+                    <div class="feature-card fade-in" style="animation-delay: 0.2s">
+                        <div class="feature-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <h5 class="feature-title">Geolocation</h5>
+                        <p class="feature-description">Identify country, region, and ISP information for any IP address</p>
+                    </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <a href="https://www.shodan.io" target="_blank" class="tool-card">
-                        <i class="fas fa-search-location"></i>
-                        <span>Shodan</span>
-                    </a>
+                <div class="col-md-4">
+                    <div class="feature-card fade-in" style="animation-delay: 0.3s">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h5 class="feature-title">Community Insights</h5>
+                        <p class="feature-description">View community reports and security analysts' feedback</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="features mt-5">
+        <div class="additional-tools mt-5">
+            <h4 class="text-center mb-4 section-title">Additional Analysis Tools</h4>
             <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="feature-item">
-                        <i class="fas fa-shield-alt"></i>
-                        <h5>Security Analysis</h5>
-                        <p>Check IP reputation and threat level</p>
-                    </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('hash_lookup') }}" class="feature-card fade-in" style="animation-delay: 0.4s">
+                        <div class="feature-icon">
+                            <i class="fas fa-fingerprint"></i>
+                        </div>
+                        <h5 class="feature-title">Hash Lookup</h5>
+                        <p class="feature-description">Verify malware and file signatures</p>
+                    </a>
                 </div>
-                <div class="col-md-4">
-                    <div class="feature-item">
-                        <i class="fas fa-globe"></i>
-                        <h5>Geolocation</h5>
-                        <p>Identify country and network details</p>
-                    </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('bulk_upload') }}" class="feature-card fade-in" style="animation-delay: 0.5s">
+                        <div class="feature-icon">
+                            <i class="fas fa-upload"></i>
+                        </div>
+                        <h5 class="feature-title">Bulk IP Analysis</h5>
+                        <p class="feature-description">Process multiple IPs at once</p>
+                    </a>
                 </div>
-                <div class="col-md-4">
-                    <div class="feature-item">
-                        <i class="fas fa-comments"></i>
-                        <h5>Community Insights</h5>
-                        <p>View user reports and feedback</p>
-                    </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('osint_framework') }}" class="feature-card fade-in" style="animation-delay: 0.6s">
+                        <div class="feature-icon">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                        <h5 class="feature-title">OSINT Framework</h5>
+                        <p class="feature-description">Access open-source intelligence tools</p>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('google_dorks') }}" class="feature-card fade-in" style="animation-delay: 0.7s">
+                        <div class="feature-icon">
+                            <i class="fab fa-google"></i>
+                        </div>
+                        <h5 class="feature-title">Google Dorks</h5>
+                        <p class="feature-description">Advanced search queries for OSINT</p>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-    function validateIP() {
-        const ip = document.getElementById('ip').value;
-        const privateIPRegex = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.0\.0\.1$)/;
-        const broadcastIPRegex = /^(\d{1,3}\.){3}255$/;
-        if (privateIPRegex.test(ip) || broadcastIPRegex.test(ip)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Invalid IP',
-                text: 'Please insert a public IP address for analysis.',
-                confirmButtonColor: '#3085d6'
-            });
-            return false;
-        }
-        return true;
-    }
+    // Add pulse animation to the main CTA button
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctaButton = document.querySelector('.btn-primary.btn-lg');
+        setTimeout(() => {
+            ctaButton.classList.add('pulse');
+        }, 1500);
+    });
 </script>
 {% endblock %}

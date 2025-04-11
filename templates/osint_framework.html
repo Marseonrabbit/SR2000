@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}OSINT Framework{% endblock %}
+
+{% block content %}
+<div class="card slide-in-up">
+    <div class="card-body">
+        <div class="text-center mb-5 fade-in">
+            <i class="fas fa-sitemap fa-3x text-primary mb-4"></i>
+            <h2 class="card-title">OSINT Framework</h2>
+            <p class="lead text-muted">Open Source Intelligence Tools and Resources</p>
+        </div>
+
+        <div class="osint-search mb-4 fade-in" style="animation-delay: 0.1s">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="osint-search" class="form-control" placeholder="Search for OSINT tools...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="osint-framework mt-5 fade-in" style="animation-delay: 0.2s">
+            <!-- Render top-level categories -->
+            {% for category in osint_data.children %}
+            <div class="osint-category mb-4">
+                <div class="osint-category-title" data-category-id="{{ loop.index }}">
+                    <span><i class="fas fa-folder me-2"></i> {{ category.name }}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="osint-tools" id="category-{{ loop.index }}">
+                    <!-- Render category items -->
+                    {% for tool in category.children %}
+                    <div class="osint-tool">
+                        {% if tool.url %}
+                        <i class="fas fa-external-link-alt osint-tool-icon"></i>
+                        <span class="osint-tool-name">{{ tool.name }}</span>
+                        <a href="{{ tool.url }}" class="osint-tool-link" target="_blank">
+                            Visit <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                        {% elif tool.children %}
+                        <i class="fas fa-folder-open osint-tool-icon"></i>
+                        <span class="osint-tool-name">{{ tool.name }}</span>
+                        <span class="osint-tool-count badge bg-primary rounded-pill">{{ tool.children|length }}</span>
+                        {% else %}
+                        <i class="fas fa-info-circle osint-tool-icon"></i>
+                        <span class="osint-tool-name">{{ tool.name }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="osint-resources mt-5 fade-in" style="animation-delay: 0.3s">
+            <h4 class="text-center mb-4 section-title">Additional OSINT Resources</h4>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <h5 class="feature-title">OSINT Techniques</h5>
+                        <p class="feature-description">Learn advanced OSINT methodologies and strategies for effective intelligence gathering.</p>
+                        <a href="https://www.osintframework.com/" target="_blank" class="btn btn-sm btn-primary mt-3">
+                            <i class="fas fa-external-link-alt me-1"></i> Learn More
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h5 class="feature-title">Popular OSINT Tools</h5>
+                        <p class="feature-description">Discover top-rated tools that security professionals use for intelligence gathering.</p>
+                        <a href="https://github.com/jivoi/awesome-osint" target="_blank" class="btn btn-sm btn-primary mt-3">
+                            <i class="fab fa-github me-1"></i> View on GitHub
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card h-100">
+                        <div class="feature-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h5 class="feature-title">OSINT Training</h5>
+                        <p class="feature-description">Find courses and resources to improve your OSINT skills and techniques.</p>
+                        <a href="https://www.sans.org/cyber-security-courses/open-source-intelligence-gathering/" target="_blank" class="btn btn-sm btn-primary mt-3">
+                            <i class="fas fa-external-link-alt me-1"></i> Training Resources
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="osint-tips mt-5 fade-in" style="animation-delay: 0.4s">
+            <div class="result-card">
+                <div class="result-card-header">
+                    <i class="fas fa-lightbulb"></i> OSINT Best Practices
+                </div>
+                <div class="result-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="mb-0">
+                                <li class="mb-2">Use a dedicated browser or virtual machine for OSINT activities</li>
+                                <li class="mb-2">Protect your identity with VPNs or Tor when necessary</li>
+                                <li class="mb-2">Document your findings methodically</li>
+                                <li>Verify information across multiple sources</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="mb-0">
+                                <li class="mb-2">Respect privacy and legal boundaries</li>
+                                <li class="mb-2">Be mindful of leaving digital footprints</li>
+                                <li class="mb-2">Regularly update your OSINT toolkit</li>
+                                <li>Join OSINT communities to stay current</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize category toggles
+        const categoryTitles = document.querySelectorAll('.osint-category-title');
+        categoryTitles.forEach(title => {
+            title.addEventListener('click', function() {
+                const categoryId = this.getAttribute('data-category-id');
+                const toolsContainer = document.getElementById('category-' + categoryId);
+                
+                // Toggle expanded class
+                const category = this.parentElement;
+                category.classList.toggle('osint-category-expanded');
+                
+                // Rotate chevron icon
+                const icon = this.querySelector('.fa-chevron-down');
+                if (category.classList.contains('osint-category-expanded')) {
+                    icon.style.transform = 'rotate(180deg)';
+                    toolsContainer.style.display = 'block';
+                } else {
+                    icon.style.transform = 'rotate(0deg)';
+                    toolsContainer.style.display = 'none';
+                }
+            });
+        });
+        
+        // Search functionality
+        const searchInput = document.getElementById('osint-search');
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            // Get all tools
+            const tools = document.querySelectorAll('.osint-tool');
+            let visibleTools = 0;
+            
+            tools.forEach(tool => {
+                const toolName = tool.querySelector('.osint-tool-name').textContent.toLowerCase();
+                
+                if (toolName.includes(searchTerm)) {
+                    tool.style.display = 'flex';
+                    
+                    // Make sure parent category is expanded
+                    const category = tool.closest('.osint-category');
+                    category.classList.add('osint-category-expanded');
+                    const toolsContainer = category.querySelector('.osint-tools');
+                    toolsContainer.style.display = 'block';
+                    const icon = category.querySelector('.fa-chevron-down');
+                    icon.style.transform = 'rotate(180deg)';
+                    
+                    visibleTools++;
+                } else {
+                    tool.style.display = 'none';
+                }
+            });
+            
+            // Show/hide categories based on if they have visible tools
+            const categories = document.querySelectorAll('.osint-category');
+            categories.forEach(category => {
+                const visibleToolsInCategory = category.querySelectorAll('.osint-tool[style="display: flex;"]').length;
+                if (visibleToolsInCategory === 0 && searchTerm !== '') {
+                    category.style.display = 'none';
+                } else {
+                    category.style.display = 'block';
+                }
+            });
+            
+            // Reset all categories if search is cleared
+            if (searchTerm === '') {
+                categories.forEach(category => {
+                    category.style.display = 'block';
+                    category.classList.remove('osint-category-expanded');
+                    const toolsContainer = category.querySelector('.osint-tools');
+                    toolsContainer.style.display = 'none';
+                    const icon = category.querySelector('.fa-chevron-down');
+                    icon.style.transform = 'rotate(0deg)';
+                });
+            }
+        });
+        
+        // Expand first category by default
+        if (categoryTitles.length > 0) {
+            categoryTitles[0].click();
+        }
+    });
+</script>
+{% endblock %}

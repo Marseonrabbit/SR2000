@@ -1,9 +1,114 @@
 {% extends "base.html" %}
+
+{% block title %}Bulk IP Analysis{% endblock %}
+
 {% block content %}
-<h2>Bulk IP Lookup</h2>
-<form method="post" action="{{ url_for('process_bulk_upload') }}" enctype="multipart/form-data">
-    <label for="file">Select CSV/Excel File:</label><br>
-    <input type="file" name="file" id="file" accept=".csv,.xls,.xlsx" required><br><br>
-    <input type="submit" value="Upload and Process">
-</form>
+<div class="card slide-in-up">
+    <div class="card-body">
+        <div class="text-center mb-5 fade-in">
+            <i class="fas fa-upload fa-3x text-primary mb-4"></i>
+            <h2 class="card-title">Bulk IP Analysis</h2>
+            <p class="lead text-muted">Upload multiple IP addresses for batch analysis</p>
+        </div>
+
+        <form method="post" action="{{ url_for('process_bulk_upload') }}" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group mb-4">
+                <label for="file" class="form-label visually-hidden">Upload File</label>
+                <div class="upload-container">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h5 class="upload-title">Upload File</h5>
+                    <p class="upload-subtitle mb-3">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                    <input type="file" 
+                           name="file" 
+                           id="file" 
+                           class="form-control" 
+                           accept=".csv,.xls,.xlsx" 
+                           required>
+                </div>
+                <div class="text-muted mt-2 small text-center">
+                    <i class="fas fa-info-circle"></i> Maximum file size: 16MB
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-play-circle"></i> Start Analysis
+                </button>
+            </div>
+        </form>
+
+        <div class="file-format-guide mt-5 fade-in" style="animation-delay: 0.2s">
+            <h4 class="text-center mb-4 section-title">File Format Guide</h4>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="result-card">
+                        <div class="result-card-header">
+                            <i class="fas fa-info-circle"></i> Required Format
+                        </div>
+                        <div class="result-card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled mb-0">
+                                        <li class="mb-3">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            File must contain a column with IP addresses
+                                        </li>
+                                        <li class="mb-3">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Acceptable column names: "IP", "ip_address", "IPAddress"
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            Each IP should be on its own row
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled mb-0">
+                                        <li class="mb-3">
+                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                            Private IP addresses will be skipped
+                                        </li>
+                                        <li class="mb-3">
+                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                            Maximum 1000 IP addresses per file
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                            Response time depends on number of IPs
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 pt-3 border-top">
+                                <h6 class="mb-3"><i class="fas fa-table me-2"></i> Sample Format:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>IP</th>
+                                                <th>Description (optional)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>8.8.8.8</td>
+                                                <td>Google DNS</td>
+                                            </tr>
+                                            <tr>
+                                                <td>1.1.1.1</td>
+                                                <td>Cloudflare DNS</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

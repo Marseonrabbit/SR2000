@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: security-analysis-tool
+    env: python
+    buildCommand: pip install -r .pythonlibs/requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SESSION_SECRET
+        generateValue: true

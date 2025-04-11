@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card main-card">
+    <div class="card-body">
+        <div class="text-center mb-5">
+            <i class="fas fa-file-upload fa-3x text-primary mb-4"></i>
+            <h2 class="card-title">Bulk Hash Analysis</h2>
+            <p class="lead text-muted">Upload multiple file hashes for batch analysis</p>
+        </div>
+
+        <form method="post" action="{{ url_for('process_bulk_hash_upload') }}" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group mb-4">
+                <div class="upload-container text-center p-5 border-2 border-dashed rounded-lg">
+                    <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-3"></i>
+                    <h5 class="mb-3">Upload File</h5>
+                    <p class="text-muted mb-3">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                    <input type="file" 
+                           name="file" 
+                           id="file" 
+                           class="form-control" 
+                           accept=".csv,.xls,.xlsx" 
+                           required>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-process"></i> Start Analysis
+                </button>
+            </div>
+        </form>
+
+        <div class="file-format-guide mt-5">
+            <h4 class="text-center mb-4">File Format Guide</h4>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i class="fas fa-info-circle"></i> Required Format
+                        </div>
+                        <div class="info-card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    One hash per row in a single column
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Supported hash types: MD5, SHA-1, SHA-256
+                                </li>
+                                <li>
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    Maximum 1000 hashes per file
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.upload-container {
+    border: 2px dashed #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.upload-container:hover {
+    border-color: var(--primary-color);
+    background-color: #f8fafc;
+}
+
+.upload-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-control[type="file"] {
+    border: none;
+    background: none;
+    padding: 0;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button {
+    visibility: hidden;
+    display: none;
+}
+
+.form-control[type="file"]::before {
+    content: 'Select File';
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.form-control[type="file"]:hover::before {
+    background: var(--secondary-color);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,56 @@
+{
+  "name": "OSINT Framework",
+  "children": [
+    {
+      "name": "Domain & IP Research",
+      "children": [
+        {
+          "name": "VirusTotal",
+          "url": "https://www.virustotal.com/"
+        },
+        {
+          "name": "AbuseIPDB",
+          "url": "https://www.abuseipdb.com/"
+        },
+        {
+          "name": "Shodan",
+          "url": "https://www.shodan.io/"
+        },
+        {
+          "name": "SecurityTrails",
+          "url": "https://securitytrails.com/"
+        }
+      ]
+    },
+    {
+      "name": "Email & Username Research",
+      "children": [
+        {
+          "name": "Hunter.io",
+          "url": "https://hunter.io/"
+        },
+        {
+          "name": "Email-Format",
+          "url": "https://www.email-format.com/"
+        },
+        {
+          "name": "Have I Been Pwned",
+          "url": "https://haveibeenpwned.com/"
+        }
+      ]
+    },
+    {
+      "name": "Social Media Research",
+      "children": [
+        {
+          "name": "Sherlock",
+          "url": "https://github.com/sherlock-project/sherlock"
+        },
+        {
+          "name": "Social-Analyzer",
+          "url": "https://github.com/qeeqbox/social-analyzer"
+        }
+      ]
+    }
+  ]
+}

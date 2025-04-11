@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="card-title text-center mb-4">Analysis Results</h2>
+        
+        <div class="result-summary mb-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i class="fas fa-info-circle"></i> Basic Information
+                        </div>
+                        <div class="info-card-body">
+                            <div class="info-item">
+                                <label>IP Address:</label>
+                                <span class="value">{{ result.ip }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>ISP:</label>
+                                <span class="value">{{ result.isp }}</span>
+                            </div>
+                            <div class="info-item">
+                                <label>Country:</label>
+                                <span class="value">{{ result.country }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i class="fas fa-shield-alt"></i> Security Status
+                        </div>
+                        <div class="info-card-body">
+                            <div class="info-item">
+                                <label>Reputation:</label>
+                                <span class="value reputation-badge reputation-{{ result.reputation.lower() }}">
+                                    {{ result.reputation }}
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <label>Malicious Score:</label>
+                                <span class="value">{{ result.malicious_score }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if result.comments %}
+        <div class="comments-section mt-4">
+            <h3 class="section-title">
+                <i class="fas fa-comments"></i> Community Feedback
+            </h3>
+            <div class="comment-list">
+                {% for comment in result.comments %}
+                <div class="comment-card">
+                    <div class="comment-header">
+                        <div class="comment-user">
+                            <i class="fas fa-user"></i> {{ comment.user }}
+                        </div>
+                        <div class="comment-date">
+                            <i class="fas fa-calendar-alt"></i> {{ comment.date }}
+                        </div>
+                    </div>
+                    <div class="comment-body">
+                        {{ comment.comment }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="no-comments text-center mt-4">
+            <i class="fas fa-comment-slash fa-2x"></i>
+            <h3>No Community Comments Available</h3>
+        </div>
+        {% endif %}
+
+        <div class="actions text-center mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-search"></i> New Lookup
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

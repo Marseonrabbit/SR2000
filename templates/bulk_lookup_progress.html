@@ -1,18 +1,26 @@
 {% extends "base.html" %}
+
+{% block title %}Bulk IP Analysis Progress{% endblock %}
+
 {% block content %}
-<div class="card main-card">
+<div class="card slide-in-up">
     <div class="card-body">
-        <div class="text-center mb-5">
-            <i class="fas fa-sync fa-spin fa-3x text-primary mb-4"></i>
-            <h2 class="card-title">Bulk IP Lookup Progress</h2>
+        <div class="text-center mb-5 fade-in">
+            <div class="spinner-container mb-4">
+                <i class="fas fa-sync fa-spin fa-3x text-primary"></i>
+            </div>
+            <h2 class="card-title">Bulk IP Analysis</h2>
             <p class="lead text-muted" id="message">Processing IP addresses...</p>
         </div>
 
-        <div class="progress-container">
-            <div class="progress thin-progress">
+        <div class="progress-container fade-in" style="animation-delay: 0.2s">
+            <div class="progress">
                 <div id="progress-fill" 
                      class="progress-bar progress-bar-striped progress-bar-animated" 
                      role="progressbar" 
+                     aria-valuenow="0"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
                      style="width: 0%">
                 </div>
             </div>
@@ -21,102 +29,153 @@
             </div>
         </div>
 
-        <div class="text-center mt-4">
+        <div class="processing-stats mt-4 fade-in" style="animation-delay: 0.3s">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="result-card">
+                        <div class="result-card-header">
+                            <i class="fas fa-info-circle"></i> Processing Information
+                        </div>
+                        <div class="result-card-body">
+                            <div class="result-item">
+                                <span class="result-item-label">Job ID:</span>
+                                <span class="result-item-value">{{ job_id }}</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-item-label">Status:</span>
+                                <span class="result-item-value" id="status-text">Processing</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-item-label">Estimated Time:</span>
+                                <span class="result-item-value" id="estimated-time">Calculating...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4 fade-in" style="animation-delay: 0.4s">
             <form method="post" action="{{ url_for('cancel_job', job_id=job_id) }}" class="d-inline-block">
                 <button type="submit" class="btn btn-warning btn-lg">
                     <i class="fas fa-stop-circle"></i> Cancel Analysis
                 </button>
+                
+                <a href="{{ url_for('bulk_upload') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                    <i class="fas fa-arrow-left"></i> Back to Upload
+                </a>
             </form>
         </div>
     </div>
 </div>
 
 <!-- Completion Modal -->
-<div class="modal fade" id="completionModal" tabindex="-1" role="dialog" aria-labelledby="completionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+<div class="modal fade" id="completionModal" tabindex="-1" aria-labelledby="completionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="completionModalLabel">
-                    <i class="fas fa-check-circle me-2"></i>Analysis Complete
+                    <i class="fas fa-check-circle me-2"></i> Analysis Complete
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center py-4">
                 <i class="fas fa-file-download fa-3x text-success mb-3"></i>
                 <p class="lead">Your analysis is complete. The results are ready for download.</p>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    The results contain detailed information about each IP address including reputation, geolocation, and security metrics.
+                </div>
             </div>
             <div class="modal-footer justify-content-center">
                 <a href="" id="downloadLink" class="btn btn-success btn-lg">
-                    <i class="fas fa-download me-2"></i>Download Results
+                    <i class="fas fa-download me-2"></i> Download Results
+                </a>
+                <a href="{{ url_for('bulk_upload') }}" class="btn btn-outline-secondary">
+                    New Analysis
                 </a>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<style>
-.progress-container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.thin-progress {
-    height: 4px !important;
-    background-color: #e5e7eb;
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 1rem 0;
-}
-
-.progress-bar {
-    background-color: var(--primary-color);
-    transition: width 0.3s ease;
-}
-
-.progress-percentage {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-.modal-content {
-    border: none;
-    border-radius: 1rem;
-}
-
-.modal-header {
-    border-radius: 1rem 1rem 0 0;
-}
-</style>
-
+{% block scripts %}
 <script>
     var jobId = "{{ job_id }}";
+    var startTime = new Date().getTime();
+    var previousProgress = 0;
+    
     function getProgress() {
         fetch("/progress/" + jobId)
             .then(response => response.json())
             .then(data => {
                 document.getElementById('message').innerText = data.message;
+                document.getElementById('status-text').innerText = data.status;
+                
                 let progressFill = document.getElementById('progress-fill');
                 progressFill.style.width = data.progress + '%';
+                progressFill.setAttribute('aria-valuenow', data.progress);
                 document.getElementById('progress-text').innerText = data.progress + '%';
+                
+                // Calculate estimated time remaining
+                if (data.progress > 0 && data.progress > previousProgress) {
+                    const currentTime = new Date().getTime();
+                    const elapsedTime = (currentTime - startTime) / 1000; // in seconds
+                    const progressRate = data.progress / elapsedTime; // % per second
+                    const remainingProgress = 100 - data.progress;
+                    const estimatedTimeRemaining = remainingProgress / progressRate; // in seconds
+                    
+                    let timeText;
+                    if (estimatedTimeRemaining < 60) {
+                        timeText = Math.round(estimatedTimeRemaining) + ' seconds';
+                    } else if (estimatedTimeRemaining < 3600) {
+                        timeText = Math.round(estimatedTimeRemaining / 60) + ' minutes';
+                    } else {
+                        timeText = (estimatedTimeRemaining / 3600).toFixed(1) + ' hours';
+                    }
+                    
+                    document.getElementById('estimated-time').innerText = 'About ' + timeText + ' remaining';
+                    previousProgress = data.progress;
+                }
                 
                 if (data.status === 'Completed') {
                     document.getElementById('downloadLink').href = '/download/' + jobId;
                     new bootstrap.Modal(document.getElementById('completionModal')).show();
+                    document.getElementById('estimated-time').innerText = 'Completed';
+                    
+                    // Add celebration animation
+                    const spinner = document.querySelector('.spinner-container i');
+                    spinner.classList.remove('fa-spin', 'fa-sync');
+                    spinner.classList.add('fa-check-circle', 'text-success');
+                    
                 } else if (data.status === 'Canceled') {
-                    document.getElementById('progress-bar').style.display = 'none';
+                    document.getElementById('progress-fill').classList.remove('progress-bar-animated');
                     document.getElementById('message').innerHTML = '<i class="fas fa-ban text-warning"></i> Analysis has been canceled.';
+                    document.getElementById('estimated-time').innerText = 'Canceled';
+                    
+                    const spinner = document.querySelector('.spinner-container i');
+                    spinner.classList.remove('fa-spin', 'fa-sync');
+                    spinner.classList.add('fa-ban', 'text-warning');
+                    
                 } else if (data.status === 'Error') {
                     document.getElementById('message').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> ' + data.message;
+                    document.getElementById('estimated-time').innerText = 'Error occurred';
+                    
+                    const spinner = document.querySelector('.spinner-container i');
+                    spinner.classList.remove('fa-spin', 'fa-sync');
+                    spinner.classList.add('fa-exclamation-triangle', 'text-danger');
+                    
                 } else {
                     setTimeout(getProgress, 1000);
                 }
             })
             .catch(error => {
                 console.error('Error fetching progress:', error);
-                setTimeout(getProgress, 1000);
+                setTimeout(getProgress, 2000);
             });
     }
+    
     getProgress();
 </script>
 {% endblock %}

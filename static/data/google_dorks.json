@@ -1,0 +1,77 @@
+[
+  {
+    "category": "Sensitive Files",
+    "query": "filetype:pdf site:example.com confidential",
+    "description": "Finds confidential PDF files on a specific domain"
+  },
+  {
+    "category": "Sensitive Files",
+    "query": "filetype:xls OR filetype:xlsx intext:password",
+    "description": "Finds Excel sheets containing passwords"
+  },
+  {
+    "category": "Website Vulnerabilities",
+    "query": "inurl:wp-content/uploads/",
+    "description": "Finds WordPress uploads directory which might contain sensitive files"
+  },
+  {
+    "category": "Website Vulnerabilities",
+    "query": "intext:\"sql syntax near\" | intext:\"syntax error has occurred\" | intext:\"incorrect syntax near\" | intext:\"unexpected end of SQL command\" | intext:\"Warning: mysql_connect()\" | intext:\"Warning: mysql_query()\" | intext:\"Warning: pg_connect()\"",
+    "description": "Finds pages with potential SQL errors"
+  },
+  {
+    "category": "Exposed Credentials",
+    "query": "intext:\"INDEX OF /\" intext:\".env\"",
+    "description": "Finds exposed environment files which may contain secrets"
+  },
+  {
+    "category": "Exposed Credentials",
+    "query": "intitle:\"Index of\" intext:\".sql\"",
+    "description": "Finds exposed SQL database dumps"
+  },
+  {
+    "category": "Configuration Files",
+    "query": "intitle:\"Index of\" intext:\"config.php\"",
+    "description": "Finds exposed PHP configuration files"
+  },
+  {
+    "category": "Configuration Files",
+    "query": "intitle:\"Index of\" \"web.config\"",
+    "description": "Finds exposed web.config files from Microsoft IIS servers"
+  },
+  {
+    "category": "Network Devices",
+    "query": "intitle:\"Login Page\" inurl:\"management\"",
+    "description": "Finds login pages for network management interfaces"
+  },
+  {
+    "category": "Network Devices",
+    "query": "inurl:\"/sws/index.html\"",
+    "description": "Finds Sonicwall routers login pages"
+  },
+  {
+    "category": "Open Directories",
+    "query": "intitle:\"Index of /\" \".git\"",
+    "description": "Finds exposed Git repositories which may contain sensitive information"
+  },
+  {
+    "category": "Exposed APIs",
+    "query": "intext:\"api_key\" | intext:\"apiKey\" | intext:\"api key\" | intext:\"apikey\"",
+    "description": "Finds exposed API keys in various formats"
+  },
+  {
+    "category": "Exposed APIs",
+    "query": "intitle:\"swagger ui\" inurl:api",
+    "description": "Finds Swagger UI API documentation pages"
+  },
+  {
+    "category": "IP Addresses",
+    "query": "site:pastebin.com \"ip address\"",
+    "description": "Finds IP addresses on Pastebin that might be part of data leaks"
+  },
+  {
+    "category": "IP Addresses",
+    "query": "\"ip camera\" | intitle:\"webcam\" inurl:\"/view/index.shtml\"",
+    "description": "Finds exposed IP cameras"
+  }
+]
